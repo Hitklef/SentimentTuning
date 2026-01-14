@@ -20,12 +20,12 @@ macOS / Linux:
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
 ### 2. Clone
-# Clone the repository
+Clone the repository
 git clone https://github.com/YOUR_USERNAME/sentiment-tuning.git
 cd sentiment-tuning
 
 ### 3. Setup
-# Install all dependencies and create a virtual environment
+Install all dependencies and create a virtual environment
 uv sync
 
 
