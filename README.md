@@ -40,7 +40,11 @@ What happens (The Process):
 Inference: The script loads the default distilbert-base-uncased-finetuned-sst-2 model.
 Observation: You will see the model's predictions for technical slang. It will likely fail to recognize "fire" or "monster" as positive terms.
 
-### Step 2: Fine-Tune the Model
+### Step 2: Generate Augmented Data
+Command: uv run data_generator.py
+The Process: This script generates a synthetic dataset.json. It takes core slang templates and multiplies them across different technical entities (code, logic, PR, etc.), creating a robust dataset of 50+ examples for better generalization.
+
+### Step 3: Fine-Tune the Model
 Command: uv run train.py
 
 What happens (The Process):
@@ -48,7 +52,7 @@ Training with LoRA: Instead of updating all millions of parameters, we use Low-R
 Context Injection: We feed the model a small, specialized dataset where "fire", "sick", and "beast" are labeled as Positive in a coding context.
 Output: The script saves these lightweight weights into the models/tuned-sentiment folder.
 
-### Step 3: Verify with the Tuned Model
+### Step 4: Verify with the Tuned Model
 Command: uv run test_tuned.py
 
 What happens (The Process):
