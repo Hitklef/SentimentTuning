@@ -10,7 +10,11 @@ Solution: We apply a lightweight fine-tuning technique to "teach" the model deve
 
 ## Prerequisites & Installation
 
-### 1. Install uv (Fast Package Manager)
+### 1. Python Version
+* **Required:** Python 3.12 or 3.13 (Stable versions recommended for ML libraries).
+* **Note:** While Python 3.14 is available, 3.12/3.13 ensures full compatibility with `torch` and `transformers`.
+
+### 2. Install uv (Fast Package Manager)
 This project uses uv for lightning-fast, reproducible builds.
 
 Windows (PowerShell):
@@ -19,12 +23,10 @@ powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | ie
 macOS / Linux:
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
-### 2. Clone
+### 3. Clone
 Clone the repository
-git clone https://github.com/YOUR_USERNAME/sentiment-tuning.git
-cd sentiment-tuning
 
-### 3. Setup
+### 4. Setup
 Install all dependencies and create a virtual environment
 uv sync
 
