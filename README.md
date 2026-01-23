@@ -1,69 +1,69 @@
-# NLP Sentiment Analysis: Slang & Context Fine-Tuning
+# Mamba IT Sentiment Tuner
 
 This project demonstrates the complete lifecycle of a Machine Learning task: from local deployment of a pre-trained model to fine-tuning it for specific edge cases using LoRA (Low-Rank Adaptation).
 
 ## Project Goal
-General-purpose sentiment models (like DistilBERT) are trained on formal data and often fail to understand technical slang or metaphors.
-Example: The phrase "This code is fire!" is often classified as Negative by base models because they associate "fire" with danger, not excellence.
-Solution: We apply a lightweight fine-tuning technique to "teach" the model developer slang.
+This project focuses on the fine-tuning of the Mamba (State Space Model) architecture for sentiment analysis within an IT/Software Development context. The model is specifically trained to understand technical slang (e.g., recognizing "fire" as positive and "car crash" as negative).
 
+## 🛠 Technologies Used
 
-## Prerequisites & Installation
+| Technology | Role | Description |
+| :--- | :--- | :--- |
+| **[uv](https://github.com/astral-sh/uv)** | **Package Manager** | Next-generation Python package installer, significantly faster than pip. |
+| **Hugging Face Transformers** | **Core Library** | Provides the pre-trained Mamba weights and unified API for SSM models. |
+| **PEFT (LoRA)** | **Efficiency** | Parameter-Efficient Fine-Tuning, allowing high-quality tuning with low VRAM usage. |
+| **PyTorch** | **Compute Engine** | Backend for tensor operations and GPU-accelerated training. |
+| **Datasets** | **Data Management** | Handles data loading, mapping, and tokenization pipelines. |
 
-### 1. Python Version
-* **Required:** Python 3.12 or 3.13 (Stable versions recommended for ML libraries).
-* **Note:** While Python 3.14 is available, 3.12/3.13 ensures full compatibility with `torch` and `transformers`.
+---
 
-### 2. Install uv (Fast Package Manager)
-This project uses uv for lightning-fast, reproducible builds.
+## 🚀 System Requirements
+* **OS:** Ubuntu 22.04+ (via WSL2 on Windows)
+* **GPU:** NVIDIA RTX 30-series or 40-series (RTX 4080 tested)
+* **CUDA:** 12.1 or newer
+* **Python:** 3.10 or 3.11
 
-* **Windows (PowerShell):** powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
-* **macOS / Linux:** curl -LsSf https://astral.sh/uv/install.sh | sh
+---
+## Setup & Installation
 
-### 3. Clone
-Clone the repository
+### 1. Environment Preparation
+Ensure you are in your WSL2 terminal and have `uv` installed
 
-### 4. Setup
-Install all dependencies and create a virtual environment
-* **Command:** uv sync
+# Install uv if you haven't already
+curl -LsSf [https://astral.sh/uv/install.sh](https://astral.sh/uv/install.sh) | sh
 
+# Clone and enter repository
+git clone
 
-## Execution Guide (Order of Operations)
+# Create and activate virtual environment using uv
+uv venv
+source .venv/bin/activate
+
+### 2. Dependency Installation
+Install the core stack optimized for CUDA 12.1:
+uv pip install torch torchvision torchaudio --index-url [https://download.pytorch.org/whl/cu121](https://download.pytorch.org/whl/cu121)
+uv pip install transformers datasets peft accelerate
+
+## Project Pipeline
 
 Follow these steps to see the model evolve.
 
-### Step 1: Run the Baseline Model
-* **Command:** uv run main.py
+### Step 1: Data Generation
+Run the generator to create a balanced dataset of IT-related positive and negative templates.
+* **Command:** python data_generator.py
+* **Output:** data/dataset.json
 
 What happens (The Process):
 Inference: The script loads the default distilbert-base-uncased-finetuned-sst-2 model.
 Observation: You will see the model's predictions for technical slang. It will likely fail to recognize "fire" or "monster" as positive terms.
 
-### Step 2: Generate Augmented Data
-* **Command:** uv run data_generator.py
+### Step 2: Fine-Tuning (LoRA)
+Train the model on the generated data. This script uses Float32 for stability on consumer GPUs and applies LoRA adapters to the Mamba backbone.
+* **Command:** python train.py
+* **Output:** models/mamba-tuned/
 
 What happens (The Process): 
 This script generates a synthetic dataset.json. It takes core slang templates and multiplies them across different technical entities (code, logic, PR, etc.), creating a robust dataset of 50+ examples for better generalization.
 
-### Step 3: Fine-Tune the Model
-* **Command:** uv run train.py
-
-What happens (The Process):
-Training with LoRA: Instead of updating all millions of parameters, we use Low-Rank Adaptation. It adds tiny trainable layers (adapters) to the model.
-Context Injection: We feed the model a small, specialized dataset where "fire", "sick", and "beast" are labeled as Positive in a coding context.
-Output: The script saves these lightweight weights into the models/tuned-sentiment folder.
-
-### Step 4: Verify with the Tuned Model
-* **Command:** uv run test_tuned.py
-
-What happens (The Process):
-Model Merging: The script loads the base model and overlays your custom LoRA weights.
-Comparison: It runs the same test cases. You should now see the labels change from Negative to Positive for technical slang.
-
-
-## Technologies Used
-* **Language:** Python 3.14
-* **Package Manager:** uv
-* **Core Library:** Hugging Face Transformers
-* **Efficiency:** PEFT (Parameter-Efficient Fine-Tuning)
-* **Compute:** PyTorch
+### Step 3: Evaluation
+* **Command:** python test_tuned.py
