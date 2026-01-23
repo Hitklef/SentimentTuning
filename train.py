@@ -71,13 +71,14 @@ def train():
     # 6. Training Configuration
     training_args = TrainingArguments(
         output_dir=output_dir,
-        per_device_train_batch_size=4,
-        num_train_epochs=10,        # More epochs for a small dataset
-        learning_rate=1e-4,
+        per_device_train_batch_size=8,
+        num_train_epochs=3,        # More epochs for a small dataset
+        learning_rate=2e-5,
         fp16=False,                 # Stay in Float32 for stability as we did in main.py
         logging_steps=5,
         save_strategy="no",         # Just save the final result
-        report_to="none"
+        report_to="none",
+        weight_decay=0.01
     )
 
     # 7. Start Training
