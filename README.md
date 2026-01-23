@@ -24,38 +24,41 @@ This project focuses on the fine-tuning of the Mamba (State Space Model) archite
 * **Python:** 3.10 or 3.11
 
 ---
-## Setup & Installation
 
-### 1. Environment Preparation
-Ensure you are in your WSL2 terminal and have `uv` installed
+# Setup & Installation
 
-# Install uv if you haven't already
-curl -LsSf [https://astral.sh/uv/install.sh](https://astral.sh/uv/install.sh) | sh
+## 1. Environment Preparation
+* Ensure you are in your WSL2 terminal and have `uv` installed
 
-# Clone and enter repository
-git clone
+#№ 2. Install uv if you haven't already
+* curl -LsSf [https://astral.sh/uv/install.sh](https://astral.sh/uv/install.sh) | sh
 
-# Create and activate virtual environment using uv
-uv venv
-source .venv/bin/activate
+## 3. Clone and enter repository
+* git clone
 
-### 2. Dependency Installation
+## 4. Create and activate virtual environment using uv
+* uv venv
+* source .venv/bin/activate
+
+## 5. Dependency Installation
 Install the core stack optimized for CUDA 12.1:
-uv pip install torch torchvision torchaudio --index-url [https://download.pytorch.org/whl/cu121](https://download.pytorch.org/whl/cu121)
-uv pip install transformers datasets peft accelerate
+* uv pip install torch torchvision torchaudio --index-url [https://download.pytorch.org/whl/cu121](https://download.pytorch.org/whl/cu121)
+* uv pip install transformers datasets peft accelerate
 
-## Project Pipeline
+---
+
+# Project Pipeline
 Follow these steps to see the model evolve.
 
-### Step 1: Data Generation
+## Step 1: Data Generation
 Run the generator to create a balanced dataset of IT-related positive and negative templates.
 * **Command:** python data_generator.py
 * **Output:** data/dataset.json
 
-### Step 2: Fine-Tuning (LoRA)
+## Step 2: Fine-Tuning (LoRA)
 Train the model on the generated data. This script uses Float32 for stability on consumer GPUs and applies LoRA adapters to the Mamba backbone.
 * **Command:** python train.py
 * **Output:** models/mamba-tuned/
 
-### Step 3: Evaluation
+## Step 3: Evaluation
 * **Command:** python test_tuned.py
