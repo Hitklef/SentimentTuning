@@ -45,7 +45,6 @@ uv pip install torch torchvision torchaudio --index-url [https://download.pytorc
 uv pip install transformers datasets peft accelerate
 
 ## Project Pipeline
-
 Follow these steps to see the model evolve.
 
 ### Step 1: Data Generation
@@ -53,17 +52,10 @@ Run the generator to create a balanced dataset of IT-related positive and negati
 * **Command:** python data_generator.py
 * **Output:** data/dataset.json
 
-What happens (The Process):
-Inference: The script loads the default distilbert-base-uncased-finetuned-sst-2 model.
-Observation: You will see the model's predictions for technical slang. It will likely fail to recognize "fire" or "monster" as positive terms.
-
 ### Step 2: Fine-Tuning (LoRA)
 Train the model on the generated data. This script uses Float32 for stability on consumer GPUs and applies LoRA adapters to the Mamba backbone.
 * **Command:** python train.py
 * **Output:** models/mamba-tuned/
-
-What happens (The Process): 
-This script generates a synthetic dataset.json. It takes core slang templates and multiplies them across different technical entities (code, logic, PR, etc.), creating a robust dataset of 50+ examples for better generalization.
 
 ### Step 3: Evaluation
 * **Command:** python test_tuned.py
