@@ -30,7 +30,7 @@ This project focuses on the fine-tuning of the Mamba (State Space Model) archite
 ## 1. Environment Preparation
 * Ensure you are in your WSL2 terminal and have `uv` installed
 
-#№ 2. Install uv if you haven't already
+## 2. Install uv if you haven't already
 * curl -LsSf [https://astral.sh/uv/install.sh](https://astral.sh/uv/install.sh) | sh
 
 ## 3. Clone and enter repository
