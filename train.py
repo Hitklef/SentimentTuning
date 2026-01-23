@@ -1,92 +1,109 @@
 import torch
 import os
+import torch.nn as nn
 import json
 from datasets import Dataset
 from transformers import (
-    AutoModelForSequenceClassification, 
     AutoTokenizer, 
+    AutoModel, 
     TrainingArguments, 
     Trainer,
     DataCollatorWithPadding
 )
 from peft import LoraConfig, get_peft_model
 
+# 1. Reuse the same architecture from main.py
+class MambaSentimentClassifier(nn.Module):
+    def __init__(self, model_id, num_labels=2):
+        super().__init__()
+        self.mamba = AutoModel.from_pretrained(model_id, trust_remote_code=True)
+        self.classifier = nn.Linear(self.mamba.config.hidden_size, num_labels)
+        self.config = self.mamba.config
+
+    def forward(self, input_ids, labels=None, **kwargs):
+        outputs = self.mamba(input_ids)
+        hidden_states = outputs.last_hidden_state
+        last_token_state = hidden_states[:, -1, :]
+        logits = self.classifier(last_token_state.float())
+        
+        loss = None
+        if labels is not None:
+            loss_fct = nn.CrossEntropyLoss()
+            loss = loss_fct(logits, labels)
+            
+        # Trainer expects an object with loss and logits
+        return {"loss": loss, "logits": logits} if loss is not None else logits
+
 def train():
-    # 1. Configuration
-    model_id = "distilbert-base-uncased-finetuned-sst-2-english"
-    output_dir = "./models/tuned-sentiment"
-    dataset_path = "dataset.json"
+    model_id = "state-spaces/mamba-130m-hf"
+    output_dir = "./models/mamba-tuned"
     
-    # 2. Load Augmented Data from JSON
-    if not os.path.exists(dataset_path):
-        print(f"Error: {dataset_path} not found! Run data_generator.py first.")
-        return
+    print(f"🚀 Initializing Fine-tuning for: {model_id}")
 
-    with open(dataset_path, "r") as f:
-        raw_data = json.load(f)
-    
-    # Reformat for Hugging Face Dataset
-    data = {
-        "text": [item["text"] for item in raw_data],
-        "label": [item["label"] for item in raw_data]
-    }
-    dataset = Dataset.from_dict(data)
-    print(f"Loaded {len(dataset)} examples for training.")
-
-    # 3. Load Tokenizer and Base Model
+    # 2. Tokenizer setup
     tokenizer = AutoTokenizer.from_pretrained(model_id)
-    model = AutoModelForSequenceClassification.from_pretrained(model_id)
+    tokenizer.pad_token = tokenizer.eos_token
 
-    # 4. Apply LoRA (Parameter-Efficient Fine-Tuning)
+    # 3. Load dataset
+    with open("data/dataset.json", "r") as f:
+        data = json.load(f)
+    
+    dataset = Dataset.from_list(data)
+    tokenized_ds = dataset.map(lambda x: tokenizer(x["text"], truncation=True, max_length=128), batched=True)
+
+    # 4. Initialize Model
+    model = MambaSentimentClassifier(model_id)
+
+    # 5. Apply LoRA for efficient tuning
+    # We target Mamba's internal projections to save memory and keep weights stable
     peft_config = LoraConfig(
         task_type="SEQ_CLS", 
-        r=16,               # Increased rank for better capacity
-        lora_alpha=32, 
-        target_modules=["q_lin", "v_lin"], 
-        lora_dropout=0.05
+        r=8, 
+        lora_alpha=16, 
+        target_modules=["in_proj"], 
+        lora_dropout=0.1
     )
-    model = get_peft_model(model, peft_config)
-    model.print_trainable_parameters()
-
-    # 5. Preprocess Data
-    def tokenize_function(examples):
-        return tokenizer(examples["text"], truncation=True, padding="max_length", max_length=64)
     
-    tokenized_dataset = dataset.map(tokenize_function, batched=True)
-    data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
+    # Wrap our custom model with LoRA adapters
+    model.mamba = get_peft_model(model.mamba, peft_config)
+    print("✅ LoRA adapters integrated.")
 
-    # 6. Advanced Training Arguments
+    # 6. Training Configuration
     training_args = TrainingArguments(
         output_dir=output_dir,
-        learning_rate=1e-4,            # Balanced learning rate
-        per_device_train_batch_size=8, # Slightly larger batch for stability
-        num_train_epochs=10,           # More epochs since data is augmented
-        weight_decay=0.1,              # Stronger regularization
+        per_device_train_batch_size=4,
+        num_train_epochs=10,        # More epochs for a small dataset
+        learning_rate=1e-4,
+        fp16=False,                 # Stay in Float32 for stability as we did in main.py
         logging_steps=5,
-        lr_scheduler_type="cosine",    # Smooth learning rate decay
-        warmup_ratio=0.1,              # Warm up at the start
-        save_strategy="no",
-        push_to_hub=False,
-        report_to="none"               # Can be changed to "tensorboard" later
+        save_strategy="no",         # Just save the final result
+        report_to="none"
     )
 
-    # 7. Initialize Trainer
+    # 7. Start Training
     trainer = Trainer(
         model=model,
         args=training_args,
-        train_dataset=tokenized_dataset,
-        tokenizer=tokenizer,
-        data_collator=data_collator,
+        train_dataset=tokenized_ds,
+        data_collator=DataCollatorWithPadding(tokenizer)
     )
 
-    # 8. Execution
-    print("Starting fine-tuning with augmented data...")
+    print("✨ Training in progress...")
     trainer.train()
     
-    # 9. Save the result
-    model.save_pretrained(output_dir)
+    # 8. Save the model
+    # We save only the adapter weights and the classifier head
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    # Save the LoRA adapter weights
+    model.mamba.save_pretrained(output_dir)
+
+    # Correct way to save the custom classifier head
+    torch.save(model.classifier.state_dict(), f"{output_dir}/classifier_head.pt")
+    
     tokenizer.save_pretrained(output_dir)
-    print(f"Model successfully tuned and saved to {output_dir}")
+    print(f"✅ Finished! Model and head saved to {output_dir}")
 
 if __name__ == "__main__":
     train()
